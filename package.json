@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/blessdrealest/tinyapp/issues"
   },
-  "homepage": "https://github.com/blessdrealest/tinyapp#readme"
+  "homepage": "https://github.com/blessdrealest/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
