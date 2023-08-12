@@ -20,7 +20,14 @@
 
   <!-- Display username if logged in -->
   <% if (username) { %>
-    <p>Welcome, <%= username %>!</p>
+    <p>Welcome, <%= username %>! 
+      <form action="/logout" method="POST">
+        <button type="submit">Log Out</button>
+      </form>
+      
+      
+      <!-- <a href="/logout">Log Out</a>-->
+      </p>
   <% } else {%>
           <!-- login form-->
     <form action="/login" method="POST">
@@ -28,6 +35,9 @@
       <input type="text" id="username" name="username" required>
       <button type="submit">Login</button>
     </form>
+
+              <!-- log out form-->
+    
   <% } %>
     </div>
   </nav>
