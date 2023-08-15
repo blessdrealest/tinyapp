@@ -19,8 +19,8 @@
       </div>
 
   <!-- Display username if logged in -->
-  <% if (username) { %>
-    <p>Welcome, <%= username %>! 
+  <% if (user) { %>
+    <p>Welcome, <%= user.email %>! 
       <form action="/logout" method="POST">
         <button type="submit">Log Out</button>
       </form>

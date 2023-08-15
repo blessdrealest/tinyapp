@@ -47,9 +47,44 @@ app.post('/login', (req, res) => {
   res.redirect('/urls');
 });
 
+//Endpoint for logout form submission
 app.post ('/logout', (req, res) => {
   res.clearCookie('username');
   res.redirect('/urls');
+});
+
+//Endpoint for registration form data
+app.post ("/register", (req, res) => {
+  const { email, password } = req.body;
+
+  // random user ID
+  const userId = function generateRandomString() {
+    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomString = '';
+    for (let i = 0; i < 6; i++) {
+      const randomIndex = Math.floor(Math.random() * characters.length);
+      randomString += characters.charAt(randomIndex);
+    }
+    return randomString;
+  } 
+
+  //new user object
+  const newUser = {
+    id: userId,
+    email,
+    password
+  };
+
+  //new user to users object
+  users[userId] = newUser;
+
+  //user_id cookie
+  res.cookie("user_id", userId);
+
+  // /urls page redirect
+  res.redirect("/urls");
+
+  //console.log(users);
 });
 
 app.get("/", (req, res) => {
@@ -57,24 +92,28 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  const user = users[req.cookies["user_id"]];
   const templateVars = { 
-    username: req.cookies["username"],
+    user,
+    // username: req.cookies["username"],
     urls: urlDatabase 
   };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
+  const user = users[req.cookies["user_id"]];
   const templateVars = { 
-    username: req.cookies["username"]
+    user
   };
   res.render("urls_new", templateVars);
 });
 
 
 app.get("/urls/:id", (req, res) => {
+  const user = users[req.cookies["user_id"]];
   const templateVars = { 
-  username: req.cookies["username"], 
+    user, 
   id: req.params.id, 
   longURL: urlDatabase[req.params.id] 
 };
@@ -97,6 +136,23 @@ app.get("/u/:shortURL", (req, res) => {
     res.status(404).send("Short URL not found");
   }
   });
+
+app.get("/register", (req, res) => {
+  res.render("registration");
+});
+
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2example.com",
+    password: "dishwasher-funk"
+  }
+};
 
 
 
