@@ -156,6 +156,10 @@ app.get("/register", (req, res) => {
   res.render("registration");
 });
 
+app.get("/login", (req, res) => {
+  res.render("login");
+});
+
 const users = {
   userRandomID: {
     id: "userRandomID",
@@ -168,8 +172,6 @@ const users = {
     password: "dishwasher-funk"
   }
 };
-
-
 
 app.listen(PORT, () => {
   console.log(`Tinyapp listening on port ${PORT}!`);
