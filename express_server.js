@@ -24,6 +24,16 @@ function generateRandomString() {
   return randomString;
 } 
 
+function getUserByEmail(email) {
+  for (const userId in users) {
+    const user = users[userId];
+    if (user.email === email) {
+      return user;
+    }
+  }
+  return null;
+}
+
 //Handle POST req to create a new short URL
 app.post('/urls', (req, res) => {
   const longURL = req.body.longURL;
@@ -56,6 +66,11 @@ app.post ('/logout', (req, res) => {
 //Endpoint for registration form data
 app.post ("/register", (req, res) => {
   const { email, password } = req.body;
+
+  // Check if email or password are empty
+  if (!email || !password) {
+    return res.status(400).send("Email and password cannot be empty.");
+  }
 
   // random user ID
   const userId = function generateRandomString() {
