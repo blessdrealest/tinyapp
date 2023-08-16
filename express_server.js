@@ -3,6 +3,15 @@ const app = express();
 const cookieParser = require('cookie-parser');
 const PORT = 8080; // default port 8080
 
+const requireLogin = (req, res, next) => {
+  if (req.cookies.user_id) {
+    res.redirect('/urls');
+  } else {
+    next();
+  }
+};
+
+
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -159,7 +168,7 @@ app.get("/u/:shortURL", (req, res) => {
   }
   });
 
-app.get("/register", (req, res) => {
+app.get("/register", requireLogin, (req, res) => {
   const user = null;
   const templateVars= {
     user,
@@ -167,7 +176,7 @@ app.get("/register", (req, res) => {
   res.render("registration", templateVars);
 });
 
-app.get("/login", (req, res) => {
+app.get("/login", requireLogin, (req, res) => {
   const user = null;
   const templateVars= {
     user,
