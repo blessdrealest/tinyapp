@@ -67,8 +67,8 @@ app.post('/login', (req, res) => {
 
 //Endpoint for logout form submission
 app.post ('/logout', (req, res) => {
-  res.clearCookie('username');
-  res.redirect('/urls');
+  res.clearCookie('user_id');
+  res.redirect('/login');
 });
 
 //Endpoint for registration form data
@@ -118,7 +118,6 @@ app.get("/urls", (req, res) => {
   const user = users[req.cookies["user_id"]];
   const templateVars = { 
     user,
-    // username: req.cookies["username"],
     urls: urlDatabase 
   };
   res.render("urls_index", templateVars);
@@ -161,11 +160,19 @@ app.get("/u/:shortURL", (req, res) => {
   });
 
 app.get("/register", (req, res) => {
-  res.render("registration");
+  const user = null;
+  const templateVars= {
+    user,
+  };
+  res.render("registration", templateVars);
 });
 
 app.get("/login", (req, res) => {
-  res.render("login");
+  const user = null;
+  const templateVars= {
+    user,
+  };
+  res.render("login", templateVars);
 });
 
 const users = {
