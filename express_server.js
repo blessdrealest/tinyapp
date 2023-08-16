@@ -24,7 +24,7 @@ function generateRandomString() {
   return randomString;
 } 
 
-function getUserByEmail(email) {
+function findUserWithEmail(email) {
   for (const userId in users) {
     const user = users[userId];
     if (user.email === email) {
@@ -48,12 +48,20 @@ app.post('/urls', (req, res) => {
 
 //Endpoint for login form submission
 app.post('/login', (req, res) => {
-  const { username } = req.body;
+  const { email, password } = req.body;
+//look up user by email
+  const user = findUserWithEmail(email);
 
-  //userename cookie with value from form
-  res.cookie('username', username);
+  //if user DNE or incorrect password
+  if (!user || user.password !== password) {
+    res.status(403).send("Invalid email or password");
+    return;
+  }
 
-  //redirect to /urls page
+  //set user_id cookie with the user's ID
+  res.cookie('user_id', user.id);
+
+  //redirect to /urls 
   res.redirect('/urls');
 });
 
