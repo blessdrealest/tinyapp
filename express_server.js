@@ -4,11 +4,12 @@ const cookieParser = require('cookie-parser');
 const PORT = 8080; // default port 8080
 
 const requireLogin = (req, res, next) => {
-  if (req.cookies.user_id) {
-    res.redirect('/urls');
-  } else {
-    next();
+  if (!req.cookies.user_id) {
+
+    const errorMessage = "You are not logged in. Please log in to shorten URLs";
+    return res.status(403).send(`<p>${errorMessage}</p>`);
   }
+  next();
 };
 
 
@@ -19,8 +20,8 @@ app.use(cookieParser());
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID" },
+  "9sm5xK": { longURL: "http://www.google.com", userID: "user2RandomID" }
 };
 
 function generateRandomString() {
@@ -43,12 +44,23 @@ function findUserWithEmail(email) {
   return null;
 }
 
+function urlsForUser(id) {
+  const userUrls = {};
+  for (const shortURL in urlDatabase) {
+    if (urlDatabase[shortURL].userID === id) {
+      userUrls[shortURL] = urlDatabase[shortURL];
+    }
+  }
+  return userUrls;
+}
+
 //Handle POST req to create a new short URL
 app.post('/urls', (req, res) => {
   const longURL = req.body.longURL;
   const generatedShortURL = generateRandomString();
+  const userId = req.cookies.user_id;
 
-  urlDatabase[generatedShortURL] = longURL;
+  urlDatabase[generatedShortURL] = { longURL, userID: userId };
 
   res.redirect(`/urls/${generatedShortURL}`);
 });
@@ -83,6 +95,32 @@ app.post ('/logout', (req, res) => {
 //Endpoint for registration form data
 app.post ("/register", (req, res) => {
   const { email, password } = req.body;
+
+// Delete URL endpoint
+app.post("/urls/:id/delete", (req, res) => {
+  const userId = req.cookies.user_id;
+  const user = users[userId];
+
+  if (!user) {
+    const errorMessage = "You are not logged in. Please log in or register to delete this URL.";
+    return res.status(401).send(`<p>${errorMessage}</p>`);
+  }
+
+  const url = urlDatabase[req.params.id];
+
+  if (!url) {
+    const errorMessage = "This short URL does not exist.";
+    return res.status(404).send(`<p>${errorMessage}</p>`);
+  }
+
+  if (url.userID !== user.id) {
+    const errorMessage = "You do not have permission to delete this URL.";
+    return res.status(403).send(`<p>${errorMessage}</p>`);
+  }
+
+  delete urlDatabase[req.params.id];
+  res.redirect("/urls");
+});
 
   // Check if email or password are empty
   if (!email || !password) {
@@ -124,15 +162,24 @@ app.get("/", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const user = users[req.cookies["user_id"]];
+  const userId = req.cookies.user_id;
+  const user = users[userId];
+
+  if (!user) {
+    const errorMessage = "You are not logged in. Please log in or register to view your URLs.";
+    return res.status(401).send(`<p>${errorMessage}</p>`);
+  }
+
+  const userUrls = urlsForUser(userId);
+
   const templateVars = { 
     user,
-    urls: urlDatabase 
+    urls: userUrls 
   };
   res.render("urls_index", templateVars);
 });
 
-app.get("/urls/new", (req, res) => {
+app.get("/urls/new", requireLogin, (req, res) => {
   const user = users[req.cookies["user_id"]];
   const templateVars = { 
     user
@@ -142,14 +189,64 @@ app.get("/urls/new", (req, res) => {
 
 
 app.get("/urls/:id", (req, res) => {
-  const user = users[req.cookies["user_id"]];
-  const templateVars = { 
-    user, 
-  id: req.params.id, 
-  longURL: urlDatabase[req.params.id] 
-};
+  const userId = req.cookies.user_id;
+  const user = users[userId];
+  
+  if (!user) {
+    const errorMessage = "You are not logged in. Please log in or register to view this URL.";
+    return res.status(401).send(`<p>${errorMessage}</p>`);
+  }
+
+  const url = urlDatabase[req.params.id];
+
+  if (!url) {
+    const errorMessage = "This short URL does not exist.";
+    return res.status(404).send(`<p>${errorMessage}</p>`);
+  }
+
+  if (url.userID !== user.id) {
+    const errorMessage = "You do not have permission to view this URL.";
+    return res.status(403).send(`<p>${errorMessage}</p>`);
+  }
+
+  const templateVars = {
+    user,
+    id: req.params.id,
+    longURL: url.longURL
+  };
   res.render("urls_show", templateVars);
 });
+
+// Edit URL endpoint
+app.get("/urls/:id/edit", (req, res) => {
+  const userId = req.cookies.user_id;
+  const user = users[userId];
+
+  if (!user) {
+    const errorMessage = "You are not logged in. Please log in or register to edit this URL.";
+    return res.status(401).send(`<p>${errorMessage}</p>`);
+  }
+
+  const url = urlDatabase[req.params.id];
+
+  if (!url) {
+    const errorMessage = "This short URL does not exist.";
+    return res.status(404).send(`<p>${errorMessage}</p>`);
+  }
+
+  if (url.userID !== userId) {
+    const errorMessage = "You do not have permission to edit this URL.";
+    return res.status(403).send(`<p>${errorMessage}</p>`);
+  }
+
+  const templateVars = {
+    user,
+    id: req.params.id,
+    longURL: url.longURL
+  };
+  res.render("urls_edit", templateVars);
+});
+
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
@@ -160,15 +257,17 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
-  if (longURL) {
-    res.redirect(longURL);
+  const shortURL = req.params.shortURL;
+  const url = urlDatabase[shortURL];
+  
+  if (url) {
+    res.redirect(url.longURL);
   } else {
     res.status(404).send("Short URL not found");
   }
   });
 
-app.get("/register", requireLogin, (req, res) => {
+app.get("/register", (req, res) => {
   const user = null;
   const templateVars= {
     user,
@@ -176,7 +275,7 @@ app.get("/register", requireLogin, (req, res) => {
   res.render("registration", templateVars);
 });
 
-app.get("/login", requireLogin, (req, res) => {
+app.get("/login", (req, res) => {
   const user = null;
   const templateVars= {
     user,
@@ -192,7 +291,7 @@ const users = {
   },
   user2RandomID: {
     id: "user2RandomID",
-    email: "user2example.com",
+    email: "user2@example.com",
     password: "dishwasher-funk"
   }
 };
