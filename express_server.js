@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const cookieParser = require('cookie-parser');
 const PORT = 8080; // default port 8080
+const bcrypt = require("bcryptjs");
 
 const requireLogin = (req, res, next) => {
   if (!req.cookies.user_id) {
@@ -70,11 +71,12 @@ app.post('/urls', (req, res) => {
 //Endpoint for login form submission
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
+  
 //look up user by email
   const user = findUserWithEmail(email);
 
   //if user DNE or incorrect password
-  if (!user || user.password !== password) {
+  if (!user || !bcrypt.compareSync(password, user.password)) {
     res.status(403).send("Invalid email or password");
     return;
   }
@@ -91,11 +93,6 @@ app.post ('/logout', (req, res) => {
   res.clearCookie('user_id');
   res.redirect('/login');
 });
-
-//Endpoint for registration form data
-app.post ("/register", (req, res) => {
-  const { email, password } = req.body;
-
 // Delete URL endpoint
 app.post("/urls/:id/delete", (req, res) => {
   const userId = req.cookies.user_id;
@@ -121,11 +118,17 @@ app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
+//Endpoint for registration form data
+app.post ("/register", (req, res) => {
+  const { email, password } = req.body;
 
   // Check if email or password are empty
   if (!email || !password) {
     return res.status(400).send("Email and password cannot be empty.");
   }
+
+  // Generate hashed password
+  const hashedPassword = bcrypt.hashSync(password, 10);
 
   // random user ID
   const userId = function generateRandomString() {
@@ -142,7 +145,7 @@ app.post("/urls/:id/delete", (req, res) => {
   const newUser = {
     id: userId,
     email,
-    password
+    password: hashedPassword
   };
 
   //new user to users object
@@ -153,8 +156,6 @@ app.post("/urls/:id/delete", (req, res) => {
 
   // /urls page redirect
   res.redirect("/urls");
-
-  //console.log(users);
 });
 
 app.get("/", (req, res) => {
