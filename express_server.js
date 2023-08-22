@@ -192,7 +192,7 @@ app.post('/login', (req, res) => {
   const { email, password } = req.body;
   
   //look up user by email
-  const user = getUserByEmail(email);
+  const user = getUserByEmail(email, users);
 
   //if user DNE or incorrect password
   if (!user || !bcrypt.compareSync(password, user.password)) {
@@ -262,10 +262,8 @@ app.post("/register", (req, res) => {
   //new user to users object
   users[userId] = newUser;
 
-  //user_id cookie
-  req.session.user_id = userId;
   // /urls page redirect
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 
