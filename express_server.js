@@ -170,11 +170,15 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
+  if (req.session.user_id) {
+    res.redirect('/urls');
+  } else {
   const user = null;
   const templateVars = {
     user,
   };
   res.render("registration", templateVars);
+}
 });
 
 app.get("/login", (req, res) => {
@@ -246,6 +250,11 @@ app.post("/register", (req, res) => {
     return res.status(400).send("Email and password cannot be empty.");
   }
 
+  //To check if email already exists in user object
+  if (getUserByEmail(email, users)) {
+    return res.status(400).send("Email already exists, choose a different email.");
+  }
+
   // Generate hashed password
   const hashedPassword = bcrypt.hashSync(password, 10);
 
@@ -262,8 +271,9 @@ app.post("/register", (req, res) => {
   //new user to users object
   users[userId] = newUser;
 
-  // /urls page redirect
-  res.redirect("/login");
+  req.session.user_id = userId;
+
+  res.redirect("/urls");
 });
 
 
