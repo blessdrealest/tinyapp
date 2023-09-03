@@ -241,6 +241,34 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
+// POST route to update a URL resource
+app.post("/update/:id", (req, res) => {
+  const userId = req.session.user_id;
+  const user = users[userId];
+  const url = urlDatabase[req.params.id];
+
+  if (!user) {
+    const errorMessage = "You are not logged in. Please log in or register to update this URL.";
+    return res.status(401).send(`<p>${errorMessage}</p>`);
+  }
+
+  if (!url) {
+    const errorMessage = "This short URL does not exist.";
+    return res.status(404).send(`<p>${errorMessage}</p>`);
+  }
+
+  if (url.userID !== userId) {
+    const errorMessage = "You do not have permission to update this URL.";
+    return res.status(403).send(`<p>${errorMessage}</p>`);
+  }
+
+  // Update the long URL with the new value from req.body
+  url.longURL = req.body.updatedLongURL;
+
+  res.redirect("/urls");
+});
+
+
 //Endpoint for registration form data
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
