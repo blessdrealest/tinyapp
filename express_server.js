@@ -161,8 +161,13 @@ app.get("/hello", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const url = urlDatabase[shortURL];
-  
+
+  //check that URL starts with 'http://' or 'https://', add prefix if not
   if (url) {
+    if (!url.longURL.startsWith('http://') && !url.longURL.startsWith('https://')) {
+      url.longURL = `http://www.${url.longURL}`;
+    }
+
     res.redirect(url.longURL);
   } else {
     res.status(404).send("Short URL not found");
